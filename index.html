@@ -43,10 +43,10 @@ ul.do li{margin:6px 0}
 .bounce{animation:bn .7s infinite alternate ease-in}.spin{animation:sp 1.2s infinite linear}.pulse{animation:pl .8s infinite alternate}
 @keyframes bn{from{transform:translateY(-40px)}to{transform:translateY(30px)}}@keyframes sp{to{transform:rotate(360deg)}}@keyframes pl{to{transform:scale(1.6)}}
 /* police */
-.room{position:relative;height:280px;border-radius:12px;overflow:hidden;background:linear-gradient(#8a7a66 0 70%,#5d4d3a 70%);touch-action:none;--x:-300px;--y:-300px;cursor:none}
+.room{position:relative;height:clamp(250px,55vw,360px);min-height:250px;border-radius:12px;overflow:hidden;background:linear-gradient(#8a7a66 0 70%,#5d4d3a 70%);touch-action:pan-y;--x:-300px;--y:-300px;cursor:crosshair}
 .room::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle 80px at var(--x) var(--y),transparent 0,transparent 55%,rgba(0,0,0,.94) 100%)}
-.room i{position:absolute;font-style:normal;font-size:44px}
-.clue{position:absolute;z-index:1;border:0;background:none;font-size:30px;cursor:pointer;transition:.3s}
+.room i{position:absolute;font-style:normal;font-size:clamp(25px,5vw,44px);pointer-events:none}
+.clue{position:absolute;z-index:1;border:0;background:#ffffff30;border-radius:10px;padding:3px;font-size:clamp(23px,5vw,32px);line-height:1.2;cursor:pointer;transition:transform .2s,filter .2s;transform:translate(-50%,-50%);touch-action:manipulation}
 .clue.found{z-index:3;filter:drop-shadow(0 0 8px gold);transform:scale(1.3)}
 .file{margin-top:8px;font-size:14px}
 /* forest */
@@ -371,11 +371,31 @@ main.full+footer{display:block;background:#29133f;color:#cbbdd7;padding:20px}
 @media(prefers-reduced-motion:reduce){.program-card,.program-card:before,.program-art,.program-arrow,.hero-cta{transition:none!important}}
 </style>
 
+
+<style id="forest-fix">
+.forest .tree .lf{transition:fill .8s}
+.forest .tree .lf.c{fill:#2f7d4a}
+.forest.sp .tree .lf.c{fill:#3f9d5c}.forest.su .tree .lf.c{fill:#25703d}.forest.au .tree .lf.c{fill:#2f6b3a}.forest.wi .tree .lf.c{fill:#2c5f48}
+.forest.sp .tree .lf.d{fill:var(--sp)}.forest.su .tree .lf.d{fill:var(--su)}.forest.au .tree .lf.d{fill:var(--au)}.forest.wi .tree .lf.d{fill:var(--au)}
+.tree .crown{transition:opacity 1.8s ease .3s}
+.forest.wi .tree .crown{opacity:0}
+.tree .snow{fill:#fff;opacity:0;transition:opacity 1.2s}
+.forest.wi .tree .snow{opacity:.95}
+.forest[data-full]{cursor:not-allowed}
+</style>
+
+<style id="navigation-buttons-fix">
+#jump-bottom{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:9999;border:0;border-radius:999px;padding:12px 16px;background:#4d2e7b;color:#fff;font:700 14px/1.2 system-ui,sans-serif;box-shadow:0 6px 22px #17132635;cursor:pointer;transition:transform .2s,opacity .2s}
+#jump-bottom:hover{transform:translateY(-3px)}#jump-bottom:active{transform:scale(.96)}
+#jump-bottom.is-hidden{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(8px)}
+@media(max-width:480px){#jump-bottom{right:12px;bottom:12px;padding:11px 13px;font-size:13px}}
+</style>
 </head>
 <body>
 <header><div class="lg">ЧелГУ</div><div><h1>Кем ты станешь?</h1><p>Колледж ЧелГУ · выбери направление и попробуй себя в деле</p></div><button id="fs" title="На весь экран">⛶</button></header>
 <nav id="nav"></nav>
 <main id="main"></main>
+<button id="jump-bottom" type="button" aria-label="Перейти в самый низ страницы">В самый низ ↓</button>
 <footer>Нажимай, двигай мышкой или пальцем, пробуй 👆</footer>
 <script>
 const $=(s,r=document)=>r.querySelector(s);
@@ -415,31 +435,151 @@ S.it=el=>{
 
 /* 2. ПРАВООХРАНИТЕЛЬНАЯ */
 S.po=el=>{
- const cl=[['🔍','отпечаток пальца',70,190],['🧤','перчатка',300,120],['👟','след обуви',470,215],['🗝️','ключ от сейфа',180,60],['📱','чужой телефон',390,30]];
- el.innerHTML=`<p class="hint">В комнате темно. Води фонариком и ищи улики — нажимай на найденное.</p>
- <div class="room" id="rm"><i style="left:20px;top:100px">🛋️</i><i style="left:240px;top:20px">🖼️</i><i style="right:30px;top:120px">🗄️</i><i style="left:190px;top:190px">🪑</i>
- ${cl.map((c,i)=>`<button class="clue" data-i="${i}" style="left:${c[2]}px;top:${c[3]}px">${c[0]}</button>`).join('')}</div>
- <div class="file" id="fl">📁 Дело: улик найдено 0 из 5</div>`;
+ const cl=[
+  ['🔍','поверхность со следом','Зафиксируй место обнаружения на фото и не касайся поверхности до осмотра специалистом.'],
+  ['🧤','перчатка','Отметь положение предмета. Потенциальные следы с разных объектов упаковывают отдельно.'],
+  ['👟','след обуви','Сфотографируй след с масштабной линейкой; отметь направление и состояние поверхности.'],
+  ['🗝️','ключ','Запиши точное место находки. Не пытайся проверять ключ на замках.'],
+  ['📱','телефон','Зафиксируй положение устройства и передай его уполномоченному специалисту; не изучай содержимое самостоятельно.']
+ ];
+ el.innerHTML=`<p class="hint">Учебная сцена осмотра помещения. Выбери объект, чтобы добавить его в карточку осмотра. В реальной работе место происшествия сначала обеспечивают от посторонних, фиксируют обстановку и соблюдают установленный порядок обращения с объектами.</p>
+ <div class="room" id="rm">
+  <i style="left:4%;top:36%">🛋️</i><i style="left:43%;top:7%">🖼️</i><i style="right:4%;top:42%">🗄️</i><i style="left:42%;top:70%">🪑</i>
+  ${cl.map((c,i)=>`<button class="clue" type="button" data-i="${i}" aria-label="Осмотреть: ${c[1]}" aria-pressed="false" style="left:${[12,50,82,30,69][i]}%;top:${[68,44,78,22,18][i]}%">${c[0]}</button>`).join('')}
+ </div>
+ <div class="file" id="fl" aria-live="polite">📁 Карточка осмотра: выбери объект. Зафиксировано 0 из ${cl.length}.</div>
+ <div class="row"><button class="chip" id="resetPolice" type="button">↺ Начать осмотр заново</button></div>`;
  const r=$('#rm'),got=new Set();
  r.addEventListener('pointermove',e=>{const b=r.getBoundingClientRect();r.style.setProperty('--x',(e.clientX-b.left)+'px');r.style.setProperty('--y',(e.clientY-b.top)+'px')});
- r.addEventListener('pointerleave',()=>{r.style.setProperty('--x','-300px')});
- r.onclick=e=>{const b=e.target.closest('.clue');if(!b)return;b.classList.add('found');got.add(b.dataset.i);
-  $('#fl').innerHTML=`📁 Дело: улик найдено ${got.size} из 5<br>`+[...got].map(i=>cl[i][0]+' '+cl[i][1]).join(' · ')+(got.size==5?'<br><b>✅ Дело раскрыто! Так работает криминалист.</b>':'')};
+ r.addEventListener('pointerleave',()=>{r.style.setProperty('--x','-300px');r.style.setProperty('--y','-300px')});
+ const render=(note='')=>{
+  const items=[...got].map(k=>`<li><b>${cl[k][1]}</b> — ${cl[k][2]}</li>`).join('');
+  $('#fl').innerHTML=`📁 Карточка осмотра: зафиксировано <b>${got.size} из ${cl.length}</b>.`+
+   (items?`<ol>${items}</ol>`:'<p>Пока нет зафиксированных объектов.</p>')+
+   (note?`<p>${note}</p>`:'')+
+   (got.size===cl.length?'<b>✓ Учебный осмотр завершён.</b> Следующий этап — оформить протокол и передать объекты специалистам в установленном порядке.':'');
+ };
+ r.addEventListener('click',e=>{
+  const b=e.target.closest('.clue');if(!b)return;
+  const i=Number(b.dataset.i);
+  if(got.has(i)){render(`Объект «${cl[i][1]}» уже внесён в карточку. Повторно считать его не нужно.`);return}
+  got.add(i);b.classList.add('found');b.setAttribute('aria-pressed','true');b.disabled=true;
+  render(`Зафиксировано: ${cl[i][1]}.`);
+ });
+ $('#resetPolice').onclick=()=>{
+  got.clear();r.querySelectorAll('.clue').forEach(b=>{b.classList.remove('found');b.setAttribute('aria-pressed','false');b.disabled=false});
+  render('Карточка очищена. Осмотр можно начать заново.');
+ };
 };
 
 /* 3. ЛЕСНОЕ ХОЗЯЙСТВО */
 S.fo=el=>{
- el.innerHTML=`<p class="hint">Нажимай на землю — сажай деревья. Меняй время года!</p>
+ const NS='http://www.w3.org/2000/svg',MAX=12;
+ const R=(a,b)=>a+Math.random()*(b-a),pk=a=>a[Math.floor(Math.random()*a.length)];
+ const SPEC=[['rnd','🎲 Случайное'],['spruce','🌲 Ель'],['pine','🌲 Сосна'],['birch','🌿 Берёза'],['oak','🌳 Дуб'],['maple','🍁 Клён']];
+ const NAME={spruce:'ель',pine:'сосна',birch:'берёза',oak:'дуб',maple:'клён'};
+ const PAL={
+  oak:{sp:['#6fbf5a','#7cc866'],su:['#2d7a35','#2f8a3c'],au:['#b7791f','#c2410c','#a16207']},
+  birch:{sp:['#a5dc6d','#b2e27a'],su:['#52b04a','#5cba52'],au:['#f2c230','#e8a317','#f5d442']},
+  maple:{sp:['#8bd96b','#7ed06b'],su:['#3a9d4a','#34914a'],au:['#d92520','#e8452c','#ff6a1a']}};
+ el.innerHTML=`<p class="hint">Нажимай на землю — сажай деревья (не больше ${MAX}). Выбери породу и меняй время года: зимой лиственные деревья сбрасывают листву!</p>
+ <div class="row"><b>дерево</b>${SPEC.map(([k,t],i)=>`<button class="chip${i?'':' on'}" data-t="${k}">${t}</button>`).join('')}</div>
+ <div class="row"><b>задача участка</b><select id="forestTask" style="max-width:100%;padding:8px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx)"><option value="mixed">Восстановление смешанного леса</option><option value="park">Благоустройство лесопарка</option><option value="conifer">Защитная хвойная полоса</option></select></div>
  <div class="row"><b>сезон</b><button class="chip on" data-s="sp">🌱 Весна</button><button class="chip" data-s="su">☀️ Лето</button><button class="chip" data-s="au">🍂 Осень</button><button class="chip" data-s="wi">❄️ Зима</button></div>
- <div class="forest sp" id="fr"><svg viewBox="0 0 600 300"><circle cx="500" cy="55" r="28" fill="#ffd43b"/><rect y="215" width="600" height="85" style="fill:var(--gr);transition:fill .6s"/><g id="trees"></g></svg></div>
- <div class="file" id="fc">🌳 Посажено деревьев: 0</div>`;
- const f=$('#fr');let n=0;
- el.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{f.className='forest '+b.dataset.s;el.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',x===b))});
- f.onclick=e=>{const sv=$('svg',f),p=sv.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(sv.getScreenCTM().inverse());
-  const y=Math.max(225,Math.min(285,q.y)),s=.6+(y-215)/90,x=q.x;
-  const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','tree');
-  g.innerHTML=`<rect x="${x-4*s}" y="${y-30*s}" width="${8*s}" height="${30*s}" fill="#7a4b22"/><polygon class="lf" points="${x},${y-95*s} ${x-24*s},${y-25*s} ${x+24*s},${y-25*s}"/><polygon class="lf" points="${x},${y-70*s} ${x-30*s},${y-12*s} ${x+30*s},${y-12*s}"/>`;
-  $('#trees').appendChild(g);n++;$('#fc').textContent='🌳 Посажено деревьев: '+n+(n>=8?' — настоящий лес! 1 дерево за год очищает воздух для нескольких людей.':'')};
+ <div class="forest sp" id="fr"><svg viewBox="0 0 600 300"><circle cx="500" cy="55" r="28" fill="#ffd43b"/><rect y="215" width="600" height="85" style="fill:var(--gr);transition:fill .6s"/><g id="trees"></g><g id="litter" pointer-events="none"></g></svg></div>
+ <div class="row"><div class="file" id="fc" style="flex:1;min-width:200px"></div><button class="chip" id="fcl">🧹 Расчистить участок</button></div>`;
+ const f=$('#fr'),lit=$('#litter'),tg=$('#trees');
+ let T=[],season='sp',sel='rnd',last='';
+ const assess=()=>{
+  const counts=T.reduce((a,t)=>(a[t.type]=(a[t.type]||0)+1,a),{});
+  const conifers=(counts.spruce||0)+(counts.pine||0),deciduous=T.length-conifers;
+  const task=$('#forestTask')?.value||'mixed';
+  let advice='Добавь первые деревья, чтобы получить оценку состава участка.';
+  if(T.length){
+   if(task==='mixed') advice=Object.keys(counts).length>=3
+    ?'Хорошее разнообразие пород. При реальном восстановлении также учитывают местные условия, почву и естественное возобновление.'
+    :'Для смешанного леса попробуй добавить ещё 2–3 подходящие местные породы.';
+   if(task==='park') advice='Проверь равномерность размещения, сохрани свободные проходы и не сажай деревья слишком близко к дорожкам и коммуникациям.';
+   if(task==='conifer') advice=conifers>=Math.ceil(T.length*.7)
+    ?'Состав преимущественно хвойный — соответствует учебной цели. В реальном проекте учитывают тип почвы, влажность и местные нормы.'
+    :'Для учебной хвойной полосы выбери больше елей и сосен; подбирай виды по условиям участка.';
+  }
+  return `Пород: <b>${Object.keys(counts).length}</b> · хвойных: ${conifers} · лиственных: ${deciduous}<br>${advice}`;
+ };
+ const upd=x=>{$('#fc').innerHTML=`🌳 Посажено деревьев: <b>${T.length} из ${MAX}</b><br>${assess()}`+(x?'<br>'+x:'')};
+ function build(type,x,y,s){
+  const P=(...a)=>a.map(v=>v.toFixed(1)).join(' '),pts=a=>a.map(([px,py])=>px.toFixed(1)+','+py.toFixed(1)).join(' ');
+  const sh=`<ellipse cx="${x}" cy="${y}" rx="${26*s}" ry="${5*s}" fill="#0002"/>`;
+  let h=sh,crown=[],dec=false,pal={};
+  if(type==='spruce'){
+   h+=`<rect x="${x-4*s}" y="${y-26*s}" width="${8*s}" height="${26*s}" fill="#6b4423"/>`;
+   [[62,12,34,38],[36,82,27,18],[0,100,0,0]].length;
+   const L=[[[x,y-62*s],[x-34*s,y-12*s],[x+34*s,y-12*s]],[[x,y-82*s],[x-27*s,y-36*s],[x+27*s,y-36*s]],[[x,y-100*s],[x-20*s,y-62*s],[x+20*s,y-62*s]]];
+   const C=[[[x,y-62*s],[x-18*s,y-38*s],[x+18*s,y-38*s]],[[x,y-82*s],[x-13*s,y-62*s],[x+13*s,y-62*s]],[[x,y-100*s],[x-9*s,y-84*s],[x+9*s,y-84*s]]];
+   L.forEach((l,i)=>{h+=`<polygon class="lf c" points="${pts(l)}"/><polygon class="snow" points="${pts(C[i])}"/>`});
+  }else if(type==='pine'){
+   h+=`<rect x="${x-3*s}" y="${y-84*s}" width="${6*s}" height="${84*s}" fill="#8a5a2b"/><line x1="${x}" y1="${y-60*s}" x2="${x-16*s}" y2="${y-70*s}" stroke="#8a5a2b" stroke-width="${3*s}"/><line x1="${x}" y1="${y-50*s}" x2="${x+17*s}" y2="${y-62*s}" stroke="#8a5a2b" stroke-width="${3*s}"/>`;
+   [[x,y-88*s,26,10],[x-17*s,y-70*s,19,8],[x+18*s,y-62*s,18,8]].forEach(([cx,cy,rx,ry],i)=>{const k=i?1:s;const rxx=i?rx*s:rx*s,ryy=i?ry*s:ry*s;h+=`<ellipse class="lf c" cx="${cx}" cy="${cy}" rx="${rxx}" ry="${ryy}"/><ellipse class="snow" cx="${cx}" cy="${cy-ryy*.45}" rx="${rxx*.78}" ry="${ryy*.45}"/>`});
+  }else{
+   dec=true;
+   const cfg={
+    birch:{tr:[3,70,'#f1efe8'],br:[[0,-52,-14,-66],[0,-46,15,-62]],cr:[[0,-82,17],[-13,-68,13],[13,-66,13],[0,-62,11]]},
+    oak:{tr:[6,46,'#6b4a2b'],br:[[0,-38,-22,-62],[0,-36,22,-60],[0,-44,0,-76]],cr:[[0,-78,24],[-24,-62,19],[24,-62,19],[-10,-52,15],[12,-50,15]]},
+    maple:{tr:[4,42,'#7a4b25'],br:[[0,-34,-18,-54],[0,-34,18,-54],[0,-40,0,-70]],cr:[[0,-72,22],[-18,-56,16],[18,-56,16],[0,-92,14]]}}[type];
+   const [tw,th,tc]=cfg.tr;
+   h+=cfg.br.map(([a,b,c,d])=>`<line x1="${x+a*s}" y1="${y+b*s}" x2="${x+c*s}" y2="${y+d*s}" stroke="${type==='birch'?'#d6d1c2':'#6b4a2b'}" stroke-width="${3*s}" stroke-linecap="round"/>`).join('');
+   h+=`<rect x="${x-tw*s}" y="${y-th*s}" width="${2*tw*s}" height="${th*s}" fill="${tc}"/>`;
+   if(type==='birch')for(let i=1;i<6;i++)h+=`<rect x="${x-tw*s}" y="${y-i*11*s}" width="${(i%2?4:3)*s}" height="${2.2*s}" fill="#333"/>`;
+   crown=cfg.cr.map(([a,b,r])=>[x+a*s,y+b*s,r*s]);
+   h+=`<g class="crown">`+crown.map(([cx,cy,r])=>`<circle class="lf d" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}"/>`).join('')+`</g>`;
+   const pp=PAL[type];pal={sp:pk(pp.sp),su:pk(pp.su),au:pk(pp.au)};
+  }
+  const g=document.createElementNS(NS,'g');g.setAttribute('class','tree');g.dataset.type=type;
+  if(dec)g.setAttribute('style',`--sp:${pal.sp};--su:${pal.su};--au:${pal.au}`);
+  g.innerHTML=h;
+  return {g,type,x,y,s,crown,dec,pal};
+ }
+ function shed(key,per){
+  lit.innerHTML='';
+  T.forEach(t=>{if(!t.dec)return;const col=t.pal[key];
+   t.crown.forEach(([cx,cy,r])=>{for(let i=0;i<per;i++){
+    const a=Math.random()*6.283,d=Math.random()*r*.8,sx=cx+Math.cos(a)*d,sy=cy+Math.sin(a)*d,ex=sx+R(-30,30),ey=t.y+R(-6,10),mx=sx+R(-26,26),rot=R(0,360);
+    const p=document.createElementNS(NS,'path');p.setAttribute('d','M0,0C3,-6 9,-5 11,0C8,5 3,5 0,0Z');p.setAttribute('fill',col);lit.appendChild(p);
+    p.animate([{transform:`translate(${sx}px,${sy}px) rotate(${rot}deg)`},
+     {transform:`translate(${mx}px,${(sy+ey)/2}px) rotate(${rot+170}deg)`,offset:.5},
+     {transform:`translate(${ex}px,${ey}px) rotate(${rot+330}deg)`}],
+     {duration:R(2200,3800),delay:R(0,1500),easing:'ease-in',fill:'both'});
+   }});
+  });
+ }
+ function setSeason(s){
+  if(s===season)return;const prev=season;season=s;f.className='forest '+s+(f.dataset.full?'':'');
+  el.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',x.dataset.s===s));
+  lit.innerHTML='';
+  if(s==='wi'){shed(prev==='au'?'au':prev,4);upd('❄️ Зима: дуб, берёза и клён сбросили листья, а ель и сосна остались зелёными.')}
+  else if(s==='au'&&prev==='su'){shed('au',1);upd('🍂 Осень: листья желтеют и краснеют.')}
+  else upd();
+ }
+ el.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>setSeason(b.dataset.s));
+ el.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{sel=b.dataset.t;el.querySelectorAll('[data-t]').forEach(x=>x.classList.toggle('on',x===b))});
+ $('#fcl').onclick=()=>{T=[];tg.innerHTML='';lit.innerHTML='';delete f.dataset.full;last='';upd('Участок очищен — можно спланировать посадки заново.')};
+ $('#forestTask').onchange=()=>upd('Цель лесохозяйственной работы изменена. Перепроверь состав и размещение деревьев.');
+ f.onclick=e=>{
+  if(!e.target.closest('svg'))return;
+  if(T.length>=MAX){upd('🚫 Лимит: больше '+MAX+' деревьев на участке не поместится. Нажми «Расчистить участок».');return}
+  const sv=$('svg',f),p=sv.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(sv.getScreenCTM().inverse());
+  const y=Math.max(225,Math.min(285,q.y)),s=(.6+(y-215)/90)*R(.9,1.1),x=Math.max(30,Math.min(570,q.x));
+  let type=sel;if(type==='rnd'){const ks=Object.keys(NAME).filter(k=>k!==last);type=pk(ks)}
+  last=type;
+  const t=build(type,x,y,s);
+  const nx=T.find(o=>o.y>y);nx?tg.insertBefore(t.g,nx.g):tg.appendChild(t.g);
+  T.splice(nx?T.indexOf(nx):T.length,0,t);
+  let m='Посажено: '+NAME[type]+(season==='wi'&&t.dec?' (лиственное дерево без листьев зимой)':'')+'. Учитывай назначение участка и разнообразие пород.';
+  if(T.length>=MAX){f.dataset.full=1;m+=' — 🚫 лимит достигнут, настоящий лес! Один лесничий сажает по плану, а не как попало.'}
+  else if(T.length>=8)m+=' — настоящий лес! 1 дерево за год очищает воздух для нескольких людей.';
+  upd(m);
+ };
+ upd();
 };
 
 /* 4. ЮРИСПРУДЕНЦИЯ */
@@ -518,9 +658,9 @@ S.ad=el=>{
  el.innerHTML=`<style>
  .adw{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}@media(max-width:700px){.adw{grid-template-columns:1fr}}
  .ad-controls{display:grid;gap:10px}.ad-field{display:grid;gap:5px;font-weight:700;font-size:13px}.ad-field input,.ad-field select{width:100%;min-width:0;box-sizing:border-box;border:2px solid var(--bd);border-radius:10px;padding:10px 12px;background:var(--card);color:var(--tx);font:inherit;transition:border-color .25s,box-shadow .25s}.ad-field input:focus,.ad-field select:focus{outline:none;border-color:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 15%,transparent)}
- .pst{position:relative;container-type:inline-size;aspect-ratio:4/5;border-radius:18px;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;padding:8cqw;user-select:none;transition:background .5s,box-shadow .35s;box-shadow:0 8px 0 rgba(20,20,43,.16),0 18px 30px rgba(20,20,43,.12);isolation:isolate}
+ .pst{position:relative;container-type:inline-size;aspect-ratio:4/5;border-radius:18px;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;padding:0;user-select:none;transition:background .5s,box-shadow .35s;box-shadow:0 8px 0 rgba(20,20,43,.16),0 18px 30px rgba(20,20,43,.12);isolation:isolate}
  .pst:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 15% 15%,#ffffff55,transparent 38%),linear-gradient(145deg,transparent 55%,#00000020);pointer-events:none;z-index:0}
- .pst .t{position:relative;z-index:1;font-weight:900;font-size:10cqw;line-height:1.08;text-wrap:balance;text-shadow:0 3px 0 rgba(0,0,0,.2);overflow-wrap:anywhere;pointer-events:none;transition:transform .3s}
+ .pst .t{position:relative;z-index:1;display:block;max-width:100%;padding:0 8cqw;font-weight:900;font-size:10cqw;line-height:1.08;text-wrap:balance;text-shadow:0 3px 0 rgba(0,0,0,.2);overflow-wrap:anywhere;pointer-events:none;transition:transform .3s}
  .pst .brand{position:absolute;z-index:1;bottom:6%;left:8%;right:8%;font-size:4cqw;font-weight:800;letter-spacing:.08em;text-transform:uppercase;text-shadow:0 2px 5px #0004;pointer-events:none}
  .stk{position:absolute;z-index:2;font-size:15cqw;cursor:grab;touch-action:none;user-select:none;filter:drop-shadow(0 3px 3px #0003);transition:filter .2s,scale .2s}.stk:active{cursor:grabbing;scale:1.12;filter:drop-shadow(0 5px 6px #0005)}
  .ad-palette{display:flex;gap:7px;flex-wrap:wrap}.ad-palette .chip{min-width:42px}.ad-palette .chip.on{outline:3px solid color-mix(in srgb,var(--c) 28%,transparent);outline-offset:1px}
@@ -588,6 +728,30 @@ S.tu=el=>{
  <div class="card" id="ti">Нажми на любую точку на карте 👆</div>
  <div class="row"><button class="chip" id="bl">🛎️ Позвонить в звонок на ресепшене</button></div><div class="log" id="bm2"></div>`;
  let at=0,fly=0;
+  // Classic single strike of a reception counter bell: bright metallic attack and natural decay.
+  const ding=()=>{try{
+   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+   const a=window.__ac||(window.__ac=new AC());
+   const play=()=>{
+    const t=a.currentTime,master=a.createGain();master.gain.value=.32;master.connect(a.destination);
+    // Slightly inharmonic partials create the familiar small metal desk-bell timbre.
+    [[1046.5,.52,.72],[2093,.23,.58],[3136,.105,.43],[4186,.045,.30],[880,.075,.22]].forEach(([fr,vol,dur])=>{
+     const o=a.createOscillator(),g=a.createGain();
+     o.type='sine';o.frequency.setValueAtTime(fr,t);
+     g.gain.setValueAtTime(.0001,t);
+     g.gain.exponentialRampToValueAtTime(vol,t+.004);
+     g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+     o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+.02);
+    });
+    // Very short striker click, like the hammer touching the bell.
+    const click=a.createBufferSource(),buf=a.createBuffer(1,Math.floor(a.sampleRate*.018),a.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*(1-i/data.length);
+    click.buffer=buf;const cg=a.createGain();cg.gain.setValueAtTime(.07,t);cg.gain.exponentialRampToValueAtTime(.0001,t+.018);
+    click.connect(cg);cg.connect(master);click.start(t);
+   };
+   if(a.state==='suspended')a.resume().then(play).catch(()=>{});else play();
+  }catch(_){}};
  $('#tm').onclick=e=>{const g=e.target.closest('.pt');if(!g||fly)return;const j=+g.dataset.i;if(j==at)return;const a=D[at],b=D[j];fly=1;
   const cx=(a[2]+b[2])/2,cy=Math.min(a[3],b[3])-60;$('#tp').setAttribute('d',`M${a[2]},${a[3]} Q${cx},${cy} ${b[2]},${b[3]}`);
   let t0=null;const f=ts=>{t0??=ts;const k=Math.min(1,(ts-t0)/1500),m=1-k;
@@ -595,7 +759,7 @@ S.tu=el=>{
    if(k<1)requestAnimationFrame(f);else{fly=0;at=j;$('#ti').innerHTML=`<b>${b[0]} ${b[1]}</b><br>${b[4]||'Вернулись домой — тур завершён!'}`}};
   requestAnimationFrame(f)};
  const hi=['Добро пожаловать! Ваш номер готов 🗝️','Завтрак с 7:00, трансфер уже ждёт 🚐','Рекомендуем вечернюю экскурсию 🌆'];let h=0;
- $('#bl').onclick=()=>{$('#bm2').innerHTML='<div>🛎️ Дзинь! Администратор: '+hi[h++%3]+'</div>'};
+ $('#bl').onclick=()=>{ding();const bb=$('#bl');bb.classList.remove('shake');void bb.offsetWidth;bb.classList.add('shake');$('#bm2').innerHTML='<div>🛎️ Дзинь! Администратор: '+hi[h++%3]+'</div>'};
 };
 
 /* 8. БЕСПИЛОТНИКИ */
@@ -704,7 +868,7 @@ function home(){
 }function open(id){if(id=='home')return home();curId=id;main.className='';const f=F.find(x=>x.id==id);document.documentElement.style.setProperty('--c',f.c);
  nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.id==id));
  main.innerHTML=`<div class="top"><button class="back" id="bk">← Все направления</button><h2><img class="ico" src="${IMG[f.id]}" alt=""> ${f.t}</h2></div><div class="grid"><section class="panel"><h3 class="bt">📖 Чем мы занимаемся</h3><ul class="do">${f.d.map(x=>`<li>${x}</li>`).join('')}</ul><b>Кем можно работать:</b><div class="jobs">${f.j.map(x=>`<span>${x}</span>`).join('')}</div></section><section class="panel"><h3 class="bt">🎮 А теперь попробуй сам</h3><p class="bridge-note">Ты узнал, чем занимаются специалисты. Теперь выполни небольшое задание и проверь, как это выглядит на практике.</p><div class="scene" id="sc0"></div></section></div>`;
- $('#bk').onclick=()=>open('home');window.scrollTo(0,0);S[id]($('#sc0'))}
+ $('#bk').onclick=()=>{open('home');requestAnimationFrame(()=>setTimeout(()=>$('#programs')?.scrollIntoView({behavior:'smooth',block:'start'}),80))};window.scrollTo({top:0,behavior:'instant'});S[id]($('#sc0'))}
 nav.onclick=e=>{const b=e.target.closest('button');if(b)open(b.dataset.id)};$('header').onclick=()=>open('home');$('header').style.cursor='pointer';$('.lg').innerHTML='<img src="'+LOGO+'" alt="ЧелГУ">';
 window.addEventListener('resize',()=>{if(curId=='home'){clearTimeout(rt);rt=setTimeout(home,150)}});
 $('#fs').onclick=e=>{e.stopPropagation();try{(document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()).catch(()=>{})}catch(_){}};
@@ -743,7 +907,7 @@ document.addEventListener('click',e=>{
   s.style.left=(e.clientX-r.left-d/2)+'px';s.style.top=(e.clientY-r.top-d/2)+'px';
   b.appendChild(s);setTimeout(()=>s.remove(),650)}
  if(e.target.closest('.clue'))setTimeout(()=>burst(e.clientX,e.clientY),60);
- if(e.target.closest('.forest')&&e.target.closest('svg'))burst(e.clientX,e.clientY,10);
+ if(e.target.closest('.forest:not([data-full])')&&e.target.closest('svg'))burst(e.clientX,e.clientY,10);
 },{passive:true});
 new MutationObserver(ms=>{ms.forEach(m=>{const v=m.target;
  if(v.nodeType!==1)return;
@@ -752,7 +916,7 @@ new MutationObserver(ms=>{ms.forEach(m=>{const v=m.target;
 })}).observe(document.getElementById('main'),{childList:true,subtree:true,characterData:true});
 let tiltEl=null;
 document.addEventListener('pointermove',e=>{
- const p=e.target.closest('.grid>.panel');
+ const p=e.target.closest('.scene')?null:e.target.closest('.grid>.panel');
  if(p!==tiltEl){if(tiltEl)tiltEl.style.transform='';tiltEl=p}
  if(!p||RM3)return;
  const r=p.getBoundingClientRect(),rx=((e.clientY-r.top)/r.height-.5)*-6,ry=((e.clientX-r.left)/r.width-.5)*6;
@@ -761,5 +925,20 @@ document.addEventListener('pointermove',e=>{
 document.addEventListener('pointerout',e=>{if(tiltEl&&(e.target===tiltEl||!e.relatedTarget||!e.relatedTarget.closest('.panel'))){if(tiltEl)tiltEl.style.transform='';tiltEl=null}});
 </script>
 
+
+<script>
+(()=>{
+ const btn=document.getElementById('jump-bottom');
+ if(!btn)return;
+ const nearBottom=()=>window.scrollY+window.innerHeight>=Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)-40;
+ const update=()=>btn.classList.toggle('is-hidden',nearBottom());
+ btn.addEventListener('click',()=>{
+   window.scrollTo({top:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight),behavior:'smooth'});
+ });
+ window.addEventListener('scroll',update,{passive:true});
+ window.addEventListener('resize',update,{passive:true});
+ update();
+})();
+</script>
 </body>
 </html>

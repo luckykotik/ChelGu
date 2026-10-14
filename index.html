@@ -390,6 +390,24 @@ main.full+footer{display:block;background:#29133f;color:#cbbdd7;padding:20px}
 #jump-bottom.is-hidden{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(8px)}
 @media(max-width:480px){#jump-bottom{right:12px;bottom:12px;padding:11px 13px;font-size:13px}}
 </style>
+
+<style id="hero-actions-spacing-fix">
+/* Больше расстояние между кнопками «Найти своё направление» и «Группа ВК» */
+.hero-actions{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:26px;
+  margin-top:26px;
+}
+.hero-actions .hero-cta{
+  margin:0;
+}
+@media(max-width:600px){
+  .hero-actions{gap:30px;margin-top:28px}
+}
+</style>
+
 </head>
 <body>
 <header><div class="lg">ЧелГУ</div><div><h1>Кем ты станешь?</h1><p>Колледж ЧелГУ · выбери направление и попробуй себя в деле</p></div><button id="fs" title="На весь экран">⛶</button></header>
@@ -767,7 +785,12 @@ S.dr=el=>{
  const B=[60,260];let trees='';
  for(let i=0;i<44;i++){const x=45+(i*83)%245,y=40+(i*47)%105;trees+=`<text x="${x}" y="${y}" font-size="18">🌲</text>`}
  for(let i=0;i<20;i++){const x=195+(i*53)%130,y=200+(i*37)%95;trees+=`<text x="${x}" y="${y}" font-size="18">🌲</text>`}
- el.innerHTML=`<style>.rot{transform-box:fill-box;transform-origin:center;animation:sp .15s linear infinite}</style>
+ el.innerHTML=`<style>.rot{transform-box:fill-box;transform-origin:center;animation:sp .15s linear infinite}
+/* кнопки на первом экране — подальше друг от друга */
+.hero-actions{display:flex;flex-wrap:wrap;gap:22px 30px;align-items:center;margin-top:8px}
+.hero-actions .hero-cta{width:auto;flex:0 1 auto;text-decoration:none}
+@media(max-width:560px){.hero-actions{gap:18px}.hero-actions .hero-cta{width:100%;justify-content:space-between}}
+</style>
  <p class="hint">Нажми на карту — дрон полетит туда. Или дай ему задание, как настоящий оператор. Кому-то на карте может понадобиться помощь!</p>
  <svg class="map" viewBox="0 0 600 320" id="dm" style="background:#bfe0b0">
  <rect x="35" y="22" width="280" height="135" rx="14" fill="#3f8f4f" opacity=".55"/><rect x="185" y="178" width="160" height="130" rx="14" fill="#3f8f4f" opacity=".55"/>
@@ -837,7 +860,7 @@ function home(){
     <div class="eyebrow"><span></span> КОЛЛЕДЖ ЧЕЛГУ · ТВОЙ СТАРТ</div>
     <h2>ТВОЁ БУДУЩЕЕ.<br>ТВОЙ <em>ВЫБОР.</em><br>ТВОЯ ИСТОРИЯ.</h2>
     <p>Узнай, чем занимаются специалисты, выбери направление и попробуй себя в настоящем интерактивном задании.</p>
-    <button class="hero-cta" data-scroll-programs>НАЙТИ СВОЁ НАПРАВЛЕНИЕ <span>→</span></button>
+    <div class="hero-actions"><button class="hero-cta" data-scroll-programs>НАЙТИ СВОЁ НАПРАВЛЕНИЕ <span>→</span></button><a class="hero-cta" href="https://vk.ru/club131748668" target="_blank" rel="noopener noreferrer">ГРУППА ВК <span>↗</span></a></div>
     <div class="hero-note"><span class="hero-note-mark">✳</span><span><b>Не просто смотри — пробуй.</b><small>Исследуй профессии в своём темпе.</small></span></div>
    </div>
    <div class="hero-visual" aria-hidden="true">
